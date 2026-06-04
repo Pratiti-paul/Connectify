@@ -22,8 +22,8 @@ Connectify is a simple real-time chat application built with a Vite + React clie
 
 ## Prerequisites
 
-- Node.js (v16+ recommended)
-- npm or yarn
+- Node.js 
+- npm 
 
 ## Local setup
 
