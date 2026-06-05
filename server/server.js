@@ -85,6 +85,20 @@ io.on("connection", (socket) => {
     io.emit("receive_message", messagePayload);
   });
 
+  // Handle typing notifications from clients
+  socket.on("typing", (payload) => {
+    const username = activeUsers.get(socket.id);
+    if (!username) return;
+
+    const isTyping = payload && payload.isTyping === true;
+
+    // Broadcast typing state to all OTHER connected clients
+    socket.broadcast.emit("user_typing", {
+      username,
+      isTyping,
+    });
+  });
+
   // Handle connection teardown
   socket.on("disconnect", () => {
     const username = activeUsers.get(socket.id);
@@ -101,6 +115,9 @@ io.on("connection", (socket) => {
         text: `${username} left the chat`,
         timestamp: new Date().toISOString(),
       });
+
+      // Ensure any typing indicator for this user is cleared for everyone
+      io.emit("user_typing", { username, isTyping: false });
 
       // 2. Broadcast updated online users list to everyone
       io.emit("online_users", {

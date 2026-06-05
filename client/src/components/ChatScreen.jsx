@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import MessageList from "./MessageList";
+import socket from "../socket";
 
 function ChatScreen({ username, messages, onlineUsers, onSendMessage }) {
   const [typedMessage, setTypedMessage] = useState("");
+  const [typingUsers, setTypingUsers] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const inputRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   const handleSend = (e) => {
     e.preventDefault();
@@ -12,6 +15,9 @@ function ChatScreen({ username, messages, onlineUsers, onSendMessage }) {
     if (!text) return;
 
     onSendMessage(text);
+    // notify others that user stopped typing
+    socket.emit("typing", { isTyping: false });
+
     setTypedMessage("");
 
     // Maintain focus on the input box after sending so user can keep typing immediately
@@ -27,6 +33,27 @@ function ChatScreen({ username, messages, onlineUsers, onSendMessage }) {
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Listen for typing events from other users and update local typing list
+  useEffect(() => {
+    const handleUserTyping = ({ username: typingUser, isTyping }) => {
+      setTypingUsers((prev) => {
+        if (isTyping) {
+          if (prev.includes(typingUser)) return prev;
+          return [...prev, typingUser];
+        }
+        return prev.filter((u) => u !== typingUser);
+      });
+    };
+
+    socket.on("user_typing", handleUserTyping);
+
+    return () => {
+      socket.off("user_typing", handleUserTyping);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      socket.emit("typing", { isTyping: false });
+    };
   }, []);
 
   return (
@@ -100,7 +127,17 @@ function ChatScreen({ username, messages, onlineUsers, onSendMessage }) {
               type="text"
               placeholder="Type a secure message..."
               value={typedMessage}
-              onChange={(e) => setTypedMessage(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setTypedMessage(val);
+
+                // emit typing start and debounce stop
+                socket.emit("typing", { isTyping: true });
+                if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                typingTimeoutRef.current = setTimeout(() => {
+                  socket.emit("typing", { isTyping: false });
+                }, 1200);
+              }}
               className="chat-input-field"
               autoComplete="off"
             />
@@ -116,6 +153,16 @@ function ChatScreen({ username, messages, onlineUsers, onSendMessage }) {
             </button>
           </form>
         </main>
+        {/* Typing indicator area */}
+        <div className="typing-indicator-wrap">
+          {typingUsers.length > 0 && (
+            <div className="typing-indicator" aria-live="polite">
+              {typingUsers.length === 1
+                ? `${typingUsers[0]} is typing...`
+                : `${typingUsers.join(', ')} are typing...`}
+            </div>
+          )}
+        </div>
       </div>
 
       <style>{`
@@ -439,6 +486,23 @@ function ChatScreen({ username, messages, onlineUsers, onSendMessage }) {
           .chat-input-bar {
             padding: 12px 16px;
           }
+        }
+      `}</style>
+      <style>{`
+        .typing-indicator-wrap {
+          position: absolute;
+          left: 320px;
+          bottom: 76px;
+          z-index: 12;
+        }
+
+        .typing-indicator {
+          background: rgba(0,0,0,0.45);
+          color: var(--text-secondary);
+          padding: 8px 12px;
+          border-radius: 9999px;
+          font-size: 0.85rem;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.35);
         }
       `}</style>
     </div>
