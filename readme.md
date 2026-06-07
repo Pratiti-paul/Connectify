@@ -63,6 +63,8 @@ Connectify is a simple real-time chat application built with a Vite + React clie
 - The front-end entry is in `client/src` and the main socket client code is in `client/src/socket.js` or `client/socket.js` depending on your setup.
 - The server socket handlers are in `server/server.js`.
 
+- Typing indicators: the client emits `typing` events while the local user types (debounced), and the server broadcasts `user_typing` to other connected clients. UI and behavior are implemented in `client/src/components/ChatScreen.jsx` and server handling is in `server/server.js`.
+
 ## Contributing
 
 Contributions are welcome. Open an issue or submit a pull request with a clear description of changes.
