@@ -17,6 +17,8 @@ const io = new Server(server, {
 
 // Active users mapping: socket.id -> username
 const activeUsers = new Map();
+// Recent messages store to track receipts: messageId -> { sender, delivered: Set, read: Set }
+const recentMessages = new Map();
 
 io.on("connection", (socket) => {
   console.log("Connection established with socket ID:", socket.id);
@@ -77,13 +79,26 @@ io.on("connection", (socket) => {
       sender: username,
       text: trimmedText,
       timestamp: new Date().toISOString(),
+      deliveredBy: [],
+      readBy: [],
     };
+
+    // (status tracking initialized below in recentMessages)
 
     console.log(`[Message] ${username}: ${trimmedText}`);
     
+    // Store message for receipts tracking
+    recentMessages.set(messagePayload.id, {
+      sender: username,
+      delivered: new Set(),
+      read: new Set(),
+    });
+
     // Broadcast the message to all connected clients (including the sender)
     io.emit("receive_message", messagePayload);
   });
+
+  
 
   // Handle typing notifications from clients
   socket.on("typing", (payload) => {
@@ -97,6 +112,36 @@ io.on("connection", (socket) => {
       username,
       isTyping,
     });
+  });
+
+  // Handle delivered receipts from clients
+  socket.on("delivered", ({ messageId }) => {
+    const username = activeUsers.get(socket.id);
+    if (!username || !messageId) return;
+
+    const entry = recentMessages.get(messageId);
+    if (!entry) return;
+
+    if (!entry.delivered.has(username)) {
+      entry.delivered.add(username);
+      // Broadcast delivered update to all clients
+      io.emit("message_delivered", { messageId, username });
+    }
+  });
+
+  // Handle read receipts from clients
+  socket.on("read", ({ messageId }) => {
+    const username = activeUsers.get(socket.id);
+    if (!username || !messageId) return;
+
+    const entry = recentMessages.get(messageId);
+    if (!entry) return;
+
+    if (!entry.read.has(username)) {
+      entry.read.add(username);
+      // Broadcast read update to all clients
+      io.emit("message_read", { messageId, username });
+    }
   });
 
   // Handle connection teardown

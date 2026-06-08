@@ -37,6 +37,18 @@ const MessageBubble = memo(({ message, currentUsername }) => {
         <div className={`message-bubble ${isSent ? "bubble-sent-style" : "bubble-received-style"}`}>
           <p className="bubble-text">{text}</p>
           <span className="bubble-time">{formatTime(timestamp)}</span>
+
+          {/* Receipts for messages sent by the current user */}
+          {isSent && (
+            <div className="receipts">
+              {message.deliveredBy && message.deliveredBy.length > 0 && (
+                <span className="receipt-item">✓ {message.deliveredBy.length} delivered</span>
+              )}
+              {message.readBy && message.readBy.length > 0 && (
+                <span className="receipt-item">✓✓ {message.readBy.length} read</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -146,6 +158,22 @@ const MessageBubble = memo(({ message, currentUsername }) => {
           opacity: 0.75;
           margin-top: 2px;
           font-weight: 500;
+        }
+
+        .receipts {
+          display: flex;
+          gap: 8px;
+          margin-top: 6px;
+          font-size: 0.72rem;
+          color: rgba(255,255,255,0.8);
+          opacity: 0.85;
+        }
+
+        .receipt-item {
+          background: rgba(255,255,255,0.04);
+          padding: 4px 8px;
+          border-radius: 9999px;
+          font-weight: 600;
         }
 
         .bubble-sent-style .bubble-time {
