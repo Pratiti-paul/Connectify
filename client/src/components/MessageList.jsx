@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import MessageBubble from "./MessageBubble";
 
-function MessageList({ messages, currentUsername }) {
+function MessageList({ messages, currentUsername, onEditClick, onDeleteClick }) {
   const scrollEndRef = useRef(null);
 
   // Auto-scroll logic: triggered whenever a new message is appended
@@ -23,6 +23,8 @@ function MessageList({ messages, currentUsername }) {
             key={message.id}
             message={message}
             currentUsername={currentUsername}
+            onEdit={() => onEditClick && onEditClick(message)}
+            onDelete={() => onDeleteClick && onDeleteClick(message.id)}
           />
         ))
       )}

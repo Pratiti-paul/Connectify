@@ -66,6 +66,8 @@ Connectify is a simple real-time chat application built with a Vite + React clie
 - Typing indicators: the client emits `typing` events while the local user types (debounced), and the server broadcasts `user_typing` to other connected clients. UI and behavior are implemented in `client/src/components/ChatScreen.jsx` and server handling is in `server/server.js`.
  - Typing indicators: the client emits `typing` events while the local user types (debounced), and the server broadcasts `user_typing` to other connected clients. UI and behavior are implemented in `client/src/components/ChatScreen.jsx` and server handling is in `server/server.js`.
  - Read receipts: clients emit `delivered` and `read` events for incoming messages; the server tracks per-message delivery and read sets and broadcasts `message_delivered` and `message_read` events. Client-side handling and UI are implemented in `client/src/App.jsx` and `client/src/components/MessageBubble.jsx`.
+ - Read receipts: clients emit `delivered` and `read` events for incoming messages; the server tracks per-message delivery and read sets and broadcasts `message_delivered` and `message_read` events. Client-side handling and UI are implemented in `client/src/App.jsx` and `client/src/components/MessageBubble.jsx`.
+ - Message edit/delete: message authors can edit or delete their messages. Edits are broadcast as `message_edited` with `editedAt`; deletions are broadcast as `message_deleted`. Server handling is in `server/server.js`. Client UI/handlers are in `client/src/components/MessageBubble.jsx`, `client/src/components/ChatScreen.jsx`, and `client/src/App.jsx`.
 
 ## Contributing
 

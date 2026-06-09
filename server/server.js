@@ -92,6 +92,9 @@ io.on("connection", (socket) => {
       sender: username,
       delivered: new Set(),
       read: new Set(),
+      text: trimmedText,
+      deleted: false,
+      editedAt: null,
     });
 
     // Broadcast the message to all connected clients (including the sender)
@@ -127,6 +130,50 @@ io.on("connection", (socket) => {
       // Broadcast delivered update to all clients
       io.emit("message_delivered", { messageId, username });
     }
+  });
+
+  // Handle message edits
+  socket.on("edit_message", ({ messageId, newText }) => {
+    const username = activeUsers.get(socket.id);
+    if (!username || !messageId || typeof newText !== "string") return;
+
+    const entry = recentMessages.get(messageId);
+    if (!entry) return;
+
+    // Only allow the original sender to edit
+    if (entry.sender !== username) return;
+
+    const trimmed = String(newText).trim();
+    if (!trimmed) return;
+
+    // Update stored message
+    entry.text = trimmed;
+    entry.editedAt = new Date().toISOString();
+
+    // Broadcast the edit to all clients
+    io.emit("message_edited", {
+      messageId,
+      newText: trimmed,
+      editedAt: entry.editedAt,
+    });
+  });
+
+  // Handle message deletion
+  socket.on("delete_message", ({ messageId }) => {
+    const username = activeUsers.get(socket.id);
+    if (!username || !messageId) return;
+
+    const entry = recentMessages.get(messageId);
+    if (!entry) return;
+
+    // Only allow the original sender to delete
+    if (entry.sender !== username) return;
+
+    // Mark deleted (we keep record to avoid ID reuse)
+    entry.deleted = true;
+
+    // Broadcast deletion to all clients
+    io.emit("message_deleted", { messageId });
   });
 
   // Handle read receipts from clients

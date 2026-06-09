@@ -20,6 +20,16 @@ function App() {
     socket.emit("send_message", messageText);
   };
 
+  // Handle editing an existing message
+  const handleEditMessage = (messageId, newText) => {
+    socket.emit("edit_message", { messageId, newText });
+  };
+
+  // Handle deleting an existing message
+  const handleDeleteMessage = (messageId) => {
+    socket.emit("delete_message", { messageId });
+  };
+
   useEffect(() => {
     // Listen for incoming messages (chat or system)
     socket.on("receive_message", (messagePayload) => {
@@ -63,9 +73,26 @@ function App() {
     socket.on("message_delivered", onDelivered);
     socket.on("message_read", onRead);
 
+    const onEdited = ({ messageId, newText, editedAt }) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, text: newText, editedAt } : m))
+      );
+    };
+
+    const onDeleted = ({ messageId }) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, text: "[deleted]", deleted: true } : m))
+      );
+    };
+
+    socket.on("message_edited", onEdited);
+    socket.on("message_deleted", onDeleted);
+
     return () => {
       socket.off("message_delivered", onDelivered);
       socket.off("message_read", onRead);
+      socket.off("message_edited", onEdited);
+      socket.off("message_deleted", onDeleted);
     };
   }, []);
 
@@ -110,6 +137,8 @@ function App() {
           messages={messages}
           onlineUsers={onlineUsers}
           onSendMessage={handleSendMessage}
+          onEditMessage={handleEditMessage}
+          onDeleteMessage={handleDeleteMessage}
         />
       )}
     </>

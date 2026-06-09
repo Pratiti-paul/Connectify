@@ -2,10 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import MessageList from "./MessageList";
 import socket from "../socket";
 
-function ChatScreen({ username, messages, onlineUsers, onSendMessage }) {
+function ChatScreen({ username, messages, onlineUsers, onSendMessage, onEditMessage, onDeleteMessage }) {
   const [typedMessage, setTypedMessage] = useState("");
   const [typingUsers, setTypingUsers] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState(null);
   const inputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
@@ -14,7 +15,12 @@ function ChatScreen({ username, messages, onlineUsers, onSendMessage }) {
     const text = typedMessage.trim();
     if (!text) return;
 
-    onSendMessage(text);
+    if (editingMessageId) {
+      onEditMessage(editingMessageId, text);
+      setEditingMessageId(null);
+    } else {
+      onSendMessage(text);
+    }
     // notify others that user stopped typing
     socket.emit("typing", { isTyping: false });
 
@@ -22,6 +28,24 @@ function ChatScreen({ username, messages, onlineUsers, onSendMessage }) {
 
     // Maintain focus on the input box after sending so user can keep typing immediately
     inputRef.current?.focus();
+  };
+
+  const startEdit = (message) => {
+    setEditingMessageId(message.id);
+    setTypedMessage(message.text);
+    inputRef.current?.focus();
+  };
+
+  const cancelEdit = () => {
+    setEditingMessageId(null);
+    setTypedMessage("");
+  };
+
+  const handleDelete = (messageId) => {
+    // simple confirmation
+    if (confirm("Delete this message?")) {
+      onDeleteMessage(messageId);
+    }
   };
 
   // Close sidebar drawer on screen resize if it crosses desktop threshold
@@ -118,7 +142,12 @@ function ChatScreen({ username, messages, onlineUsers, onSendMessage }) {
 
         {/* Message feed and input area */}
         <main className="chat-main">
-          <MessageList messages={messages} currentUsername={username} />
+          <MessageList
+            messages={messages}
+            currentUsername={username}
+            onEditClick={startEdit}
+            onDeleteClick={handleDelete}
+          />
 
           {/* Form container for inputs */}
           <form onSubmit={handleSend} className="chat-input-bar">

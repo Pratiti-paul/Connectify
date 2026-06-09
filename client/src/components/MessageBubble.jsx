@@ -1,6 +1,6 @@
 import { memo } from "react";
 
-const MessageBubble = memo(({ message, currentUsername }) => {
+const MessageBubble = memo(({ message, currentUsername, onEdit, onDelete }) => {
   const { type, sender, text, timestamp } = message;
   const isSent = type === "chat" && sender === currentUsername;
 
@@ -40,14 +40,21 @@ const MessageBubble = memo(({ message, currentUsername }) => {
 
           {/* Receipts for messages sent by the current user */}
           {isSent && (
-            <div className="receipts">
-              {message.deliveredBy && message.deliveredBy.length > 0 && (
-                <span className="receipt-item">✓ {message.deliveredBy.length} delivered</span>
-              )}
-              {message.readBy && message.readBy.length > 0 && (
-                <span className="receipt-item">✓✓ {message.readBy.length} read</span>
-              )}
-            </div>
+            <>
+              <div className="receipts">
+                {message.deliveredBy && message.deliveredBy.length > 0 && (
+                  <span className="receipt-item">✓ {message.deliveredBy.length} delivered</span>
+                )}
+                {message.readBy && message.readBy.length > 0 && (
+                  <span className="receipt-item">✓✓ {message.readBy.length} read</span>
+                )}
+              </div>
+
+              <div className="message-actions">
+                <button className="action-btn" onClick={onEdit} aria-label="Edit message">✎</button>
+                <button className="action-btn danger" onClick={onDelete} aria-label="Delete message">🗑</button>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -175,6 +182,27 @@ const MessageBubble = memo(({ message, currentUsername }) => {
           border-radius: 9999px;
           font-weight: 600;
         }
+
+        .message-actions {
+          display: flex;
+          gap: 8px;
+          margin-top: 8px;
+          justify-content: flex-end;
+        }
+
+        .action-btn {
+          background: rgba(255,255,255,0.03);
+          border: none;
+          color: var(--text-secondary);
+          padding: 6px 8px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 700;
+        }
+
+        .action-btn:hover { filter: brightness(1.1); }
+
+        .action-btn.danger { background: rgba(220,38,38,0.08); color: #fca5a5; }
 
         .bubble-sent-style .bubble-time {
           color: rgba(255, 255, 255, 0.8);
